@@ -1,4 +1,4 @@
-MISSION_START = datetime(2026, 6, 1, 8, 0, 0, 0); % 2026 June 01, 08:00:00.0
+MISSION_START = datetime(2028, 6, 1, 8, 0, 0, 0); % 2026 June 01, 08:00:00.0
 MISSION_END = MISSION_START + days(93); % 3-month mission life
 
 ORBIT_RADIUS = (6378 + 450) * 1000;
@@ -19,10 +19,10 @@ rapid_0 = satellite( ...
     "OrbitPropagator", "sgp4" ...
 );
 % rapid_0 = satellite(simulation, "temp/initial.tle");
-physicalProperties(rapid_0, "Mass", 4, "DragCoefficient", 1, "DragArea", 10000, "SRPArea", 0);
+physicalProperties(rapid_0, "Mass", 1.0865, "DragCoefficient", 1, "DragArea", 0.03, "SRPArea", 0);
 gs_ucla = groundStation(simulation, 34.069, -118.443, Name="UCLA");
 access(gs_ucla, rapid_0);
 play(simulation);
 % while true
-%     physicalProperties(rapid_0, "Mass", 4, "DragCoefficient", 1, "DragArea", 1000000, "SRPArea", 0);
+%     physicalProperties(rapid_0, "Mass", 1.0865, "DragCoefficient", 1, "DragArea", 0.03, "SRPArea", 0);
 % end
