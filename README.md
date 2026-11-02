@@ -1,1 +1,3 @@
-# RAPID-0-Orbit-Simulator
+# RAPID-Orbit-Simulator
+
+Hosts simulation/visualisation scripts for various cases.

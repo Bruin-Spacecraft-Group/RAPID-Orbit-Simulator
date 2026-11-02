@@ -1,17 +1,26 @@
-"""One satellite, one instant: Earth, satellite, and the satellite->Sun vector (plotly).
-
-sat, sun : Cartesian [x, y, z] in km, Earth-centred, same frame.
-           No coordinate conversion happens here; convert before calling.
+"""Satellite, Earth Modelling: Earth, satellite, and the satellite->Sun vector (plotly).
 
 Should render (via plotly) on localhost as an interactive web app
 """
-#! THIS MODULE NEEDS TO BE REMOVED BEFORE MERGING
+
 import numpy as np
 import plotly.graph_objects as go
 from sgp4.api import Satrec
 
-R_EARTH = 6371.0  # km
+# Allows us to import sun_model code
+import sys
+from pathlib import Path
 
+# sun_viz.py -> earth_models -> src -> repo root
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "submodules" / "RAPID-Software" / "src" / "lib"))
+
+from sun_model import vec_satellite_to_sun
+
+EX_TLE1 =  "1 25544U 98067A   26305.53114906  .00006056  00000+0  11739-3 0  9995"
+EX_TLE2 = "2 25544  51.6332 340.4448 0007086 335.8887  24.1768 15.49140542593046"
+
+R_EARTH = 6371.0  # km
 
 def _arrow(fig, start, vec, color, name, width=6):
     """Line from `start` along `vec` with a cone head at the tip."""
@@ -30,6 +39,7 @@ def _arrow(fig, start, vec, color, name, width=6):
 
 
 def plot_sat_sun(sat, sun, R=R_EARTH, arrow_len=None, show=True):
+    """Instantanteous sat_sun vector"""
     sat_xyz = np.asarray(sat, dtype=float).reshape(3)
     sun_xyz = np.asarray(sun, dtype=float).reshape(3)
     sat_to_sun = sun_xyz - sat_xyz                 # the vector subtraction
@@ -88,12 +98,17 @@ def plot_sat_sun(sat, sun, R=R_EARTH, arrow_len=None, show=True):
         fig.show()
     return fig, u, angle
 
-def sun_vector_test():
-    pass
-
-if __name__ == "__main__":
-    sat = [2047.2900751114767, 5124.312255450726, -3978.51714199821]
+def sun_instant_test():
+    """Test script that shows a single instant in time"""
+    satrec = Satrec.twoline2rv(EX_TLE1, EX_TLE2)
+    jd = satrec.jdsatepoch + 1
+    fr = satrec.jdsatepochF
+    err, sat = satrec.sgp4(jd, fr)
     sun = 1.496e8 * np.array([0.8, 0.45, 0.4]) / np.linalg.norm([0.8, 0.45, 0.4])
     fig, u, angle = plot_sat_sun(sat, sun, show=False)
-    fig.write_html("sat_sun.html")
-    print("wrote sat_sun.html", u, angle)
+    fig.update_layout(template='plotly_dark')
+    fig.show()
+
+
+if __name__ == "__main__":
+    sun_instant_test()
