@@ -1,6 +1,10 @@
 """
 Full Orbital version of the sun_viz script
 
+Satellite data uses the python-sgp4 implementation by Brandon Rhodes
+
+TLE data is still just ISS pulled from celestrak
+
 Propagates one full orbit from the input TLE and visualises the time series data of the full orbit
 using plotly
 """
@@ -8,7 +12,7 @@ using plotly
 import numpy as np
 import plotly.graph_objects as go
 from sgp4.api import Satrec
-from output import publish
+from output import publish_plotly
 
 # Allows us to import sun_model code
 import sys
@@ -167,7 +171,7 @@ def sun_orbit_test():
     t_min, jd, fr, r_teme = propagate_orbit(EX_TLE1, EX_TLE2, n_steps=180)
     sun_xyz = sat_to_sun_series(jd, fr, r_teme)
     fig = plot_orbit(t_min, r_teme, sun_xyz, show=False)
-    publish(fig, "Sun Vector (Full Orbit)", out_dir = "sun_models")
+    publish_plotly(fig, "Sun Vector (Full Orbit)", out_dir = "sun_models")
     
 if __name__ == "__main__":
     sun_orbit_test()

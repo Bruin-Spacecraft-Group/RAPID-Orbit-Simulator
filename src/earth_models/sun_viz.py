@@ -1,5 +1,9 @@
 """Instantaneous Satellite, Earth Modelling: Earth, satellite, and the satellite->Sun vector (plotly).
 
+Satellite data uses the python-sgp4 implementation by Brandon Rhodes
+
+TLE data is still just ISS pulled from celestrak
+
 Should render (via plotly) on localhost as an interactive web app
 integrated into github pages
 """
@@ -7,7 +11,7 @@ integrated into github pages
 import numpy as np
 import plotly.graph_objects as go
 from sgp4.api import Satrec
-from output import publish
+from output import publish_plotly
 
 # Allows us to import sun_model code
 import sys
@@ -109,7 +113,7 @@ def sun_instant_test():
     sun = 1.496e8 * np.array([0.8, 0.45, 0.4]) / np.linalg.norm([0.8, 0.45, 0.4])
     fig, u, angle = plot_sat_sun(sat, sun, show=False)
     fig.update_layout(template='plotly_dark')
-    publish(fig, "Sun Vector (Isntant)", out_dir="sun_models")
+    publish_plotly(fig, "Sun Vector (Isntant)", out_dir="sun_models")
 
 if __name__ == "__main__":
     sun_instant_test()

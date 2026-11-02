@@ -36,6 +36,7 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}/src
           PLOTLY_RENDERER: json
+          CESIUM_ION_TOKEN: ${{ secrets.CESIUM_ION_TOKEN }}
         run: |
           status=0
           for f in $(grep -rlE '^if __name__ == .__main__.' src --include='*.py'); do
