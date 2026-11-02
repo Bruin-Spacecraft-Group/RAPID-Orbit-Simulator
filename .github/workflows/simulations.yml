@@ -54,9 +54,10 @@ jobs:
           # simple index page linking every output
           {
             echo '<!doctype html><meta charset="utf-8"><title>RAPID Orbit Simulator</title>'
-            echo '<h1>RAPID Orbit Simulator results</h1><ul>'
+            echo '<style>.links {}</style>'
+            echo '<h1>RAPID Orbit Simulator Scripts</h1><ul>'
             (cd site && find . -name '*.html' ! -name index.html | sort | sed 's|^\./||' \
-              | while read -r p; do echo "<li><a href=\"$p\">$p</a></li>"; done)
+              | while read -r p; do echo "<li class = "links"><a href=\"$p\">$p</a></li>"; done)
             echo '</ul>'
           } > site/index.html
 

@@ -44,15 +44,15 @@ _CESIUM_HTML = """<!doctype html>
 const TOKEN = __TOKEN__;
 const czml = __CZML__;
 const opts = { shouldAnimate: true };
+const viewer = new Cesium.Viewer("c", { shouldAnimate: true });   // picker stays on
+
 if (TOKEN) {
-  Cesium.Ion.defaultAccessToken = TOKEN;
-} else {
-  // No ion token: use OpenStreetMap imagery + a plain ellipsoid so nothing needs an account
-  opts.baseLayer = new Cesium.ImageryLayer(
-    new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/" }));
-  opts.baseLayerPicker = false;
+  viewer.imageryLayers.removeAll();
+  viewer.imageryLayers.add(Cesium.ImageryLayer.fromWorldImagery({
+    style: Cesium.IonWorldImageryStyle.AERIAL_WITH_LABELS,
+  }));
+  viewer.scene.setTerrain(Cesium.Terrain.fromWorldTerrain());
 }
-const viewer = new Cesium.Viewer("c", opts);
 viewer.scene.globe.enableLighting = true;   // day/night terminator follows the sim clock
 Cesium.CzmlDataSource.load(czml).then(ds => {
   viewer.dataSources.add(ds);
@@ -65,7 +65,7 @@ Cesium.CzmlDataSource.load(czml).then(ds => {
 
 
 def publish_czml(packets, name, show_locally=True, out_dir="output",
-                 save_czml=True, ion_token=None):
+                 save_czml=True, ion_token=None, show_ucla = True):
     """Publish a standalone CesiumJS viewer (CZML embedded in the page).
 
     - On GitHub (CI=true): writes <out_dir>/<name>.html (plus <name>.czml when
@@ -80,7 +80,7 @@ def publish_czml(packets, name, show_locally=True, out_dir="output",
       so on a public Pages site use a token scoped to your Pages URL.
     Returns the path of the HTML file written, or None if nothing was written.
     """
-        
+
     if not _on_ci() and not show_locally:
             return None
 

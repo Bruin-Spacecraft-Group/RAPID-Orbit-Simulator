@@ -95,7 +95,7 @@ def _description_intervals(iso_times, html_strings):
 # CZML builder
 # ----------------------------------------------------------------------------
 def build_czml(t_min, jd, fr, sat_xyz, sun_xyz, R=R_EARTH,
-               name="Model", sat_name="ISS"):
+               name="Model", sat_name="ISS", show_ucla = True):
     """Return a CZML document (list of packets) for the orbit + sun geometry."""
     N = len(t_min)
     L = R  # length of the sat->Sun arrow, km (same as the plotly version)
@@ -175,6 +175,17 @@ def build_czml(t_min, jd, fr, sat_xyz, sun_xyz, R=R_EARTH,
               {"references": ["earth_center#position", "earth_sun_tip#position"]},
               arrow=True),
     ]
+
+    if show_ucla:
+        packets.append({
+            "id": "comms",
+            "name": "UCLA",
+            "position": {
+                "cartographicDegrees": [
+                    34.0722, -118.4427, 1000
+                ]
+            }
+        })
 
     # --- static North vector in the Earth-fixed frame: +z from the pole outward ---
     north_len = 0.7 * R
