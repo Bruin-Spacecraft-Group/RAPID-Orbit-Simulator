@@ -1,0 +1,52 @@
+name: Run simulations
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install numpy sgp4 plotly
+          fi
+
+      - name: Run every script with a __main__ guard
+        env:
+          MPLBACKEND: Agg
+          PYTHONPATH: ${{ github.workspace }}/submodules/RAPID-Software:${{ github.workspace }}/src
+        run: |
+          status=0
+          for f in $(grep -rlE '^if __name__ == .__main__.' src --include='*.py'); do
+            echo "::group::$f"
+            python "$f" || { echo "::error file=$f::failed"; status=1; }
+            echo "::endgroup::"
+          done
+          exit $status
+
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulation-output
+          path: |
+            **/*.png
+            **/*.csv
+          if-no-files-found: ignore
