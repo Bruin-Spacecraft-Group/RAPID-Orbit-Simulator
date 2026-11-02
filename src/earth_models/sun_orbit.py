@@ -167,7 +167,7 @@ def sun_orbit_test():
     t_min, jd, fr, r_teme = propagate_orbit(EX_TLE1, EX_TLE2, n_steps=180)
     sun_xyz = sat_to_sun_series(jd, fr, r_teme)
     fig = plot_orbit(t_min, r_teme, sun_xyz, show=False)
-    publish(fig, "Sun Vector (Full Orbit)")
+    publish(fig, "Sun Vector (Full Orbit)", out_dir = "sun_models")
     
 if __name__ == "__main__":
     sun_orbit_test()

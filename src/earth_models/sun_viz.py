@@ -109,7 +109,7 @@ def sun_instant_test():
     sun = 1.496e8 * np.array([0.8, 0.45, 0.4]) / np.linalg.norm([0.8, 0.45, 0.4])
     fig, u, angle = plot_sat_sun(sat, sun, show=False)
     fig.update_layout(template='plotly_dark')
-    publish(fig, "Sun Vector (Instant)")
+    publish(fig, "Sun Vector (Isntant)", out_dir="sun_models")
 
 if __name__ == "__main__":
     sun_instant_test()
