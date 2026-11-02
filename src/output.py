@@ -44,15 +44,25 @@ _CESIUM_HTML = """<!doctype html>
 const TOKEN = __TOKEN__;
 const czml = __CZML__;
 const opts = { shouldAnimate: true };
-const viewer = new Cesium.Viewer("c", { shouldAnimate: true });   // picker stays on
 
 if (TOKEN) {
-  viewer.imageryLayers.removeAll();
-  viewer.imageryLayers.add(Cesium.ImageryLayer.fromWorldImagery({
-    style: Cesium.IonWorldImageryStyle.AERIAL_WITH_LABELS,
-  }));
-  viewer.scene.setTerrain(Cesium.Terrain.fromWorldTerrain());
+  Cesium.Ion.defaultAccessToken = TOKEN;
+  opts.baseLayerPicker = false;   // `baseLayer` is only honored when the picker is off
+  opts.baseLayer = Cesium.ImageryLayer.fromWorldImagery({
+    style: Cesium.IonWorldImageryStyle.AERIAL_WITH_LABELS,   // or AERIAL / ROAD
+  });
+  opts.terrain = Cesium.Terrain.fromWorldTerrain();           // optional
+} else {
+  opts.baseLayerPicker = false;
+  opts.baseLayer = new Cesium.ImageryLayer(
+    new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/" }));
 }
+const viewer = new Cesium.Viewer("c", opts);
+viewer.scene.setTerrain(
+  new Cesium.Terrain(
+    Cesium.CesiumTerrainProvider.fromIonAssetId(1),
+  ),
+);
 viewer.scene.globe.enableLighting = true;   // day/night terminator follows the sim clock
 Cesium.CzmlDataSource.load(czml).then(ds => {
   viewer.dataSources.add(ds);
@@ -65,7 +75,7 @@ Cesium.CzmlDataSource.load(czml).then(ds => {
 
 
 def publish_czml(packets, name, show_locally=True, out_dir="output",
-                 save_czml=True, ion_token=None, show_ucla = True):
+                 save_czml=True, ion_token=None):
     """Publish a standalone CesiumJS viewer (CZML embedded in the page).
 
     - On GitHub (CI=true): writes <out_dir>/<name>.html (plus <name>.czml when
