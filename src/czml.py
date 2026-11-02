@@ -182,8 +182,18 @@ def build_czml(t_min, jd, fr, sat_xyz, sun_xyz, R=R_EARTH,
             "name": "UCLA",
             "position": {
                 "cartographicDegrees": [
-                    34.0722, -118.4427, 1000
+                    34.0722, -118.4427, 0.0
                 ]
+            },
+            "point": {
+                "color": {
+                    "rgba": [255, 0, 0, 255]
+                },
+                "pixelSize": 10,
+                "outlineColor": {
+                    "rgba": [255, 255, 255, 255]
+                },
+                "outlineWidth": 2
             }
         })
 

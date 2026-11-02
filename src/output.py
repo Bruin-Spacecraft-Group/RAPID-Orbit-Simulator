@@ -44,25 +44,15 @@ _CESIUM_HTML = """<!doctype html>
 const TOKEN = __TOKEN__;
 const czml = __CZML__;
 const opts = { shouldAnimate: true };
-
 if (TOKEN) {
   Cesium.Ion.defaultAccessToken = TOKEN;
-  opts.baseLayerPicker = false;   // `baseLayer` is only honored when the picker is off
-  opts.baseLayer = Cesium.ImageryLayer.fromWorldImagery({
-    style: Cesium.IonWorldImageryStyle.AERIAL_WITH_LABELS,   // or AERIAL / ROAD
-  });
-  opts.terrain = Cesium.Terrain.fromWorldTerrain();           // optional
 } else {
-  opts.baseLayerPicker = false;
+  // No ion token: use OpenStreetMap imagery + a plain ellipsoid so nothing needs an account
   opts.baseLayer = new Cesium.ImageryLayer(
     new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/" }));
+  opts.baseLayerPicker = false;
 }
 const viewer = new Cesium.Viewer("c", opts);
-viewer.scene.setTerrain(
-  new Cesium.Terrain(
-    Cesium.CesiumTerrainProvider.fromIonAssetId(1),
-  ),
-);
 viewer.scene.globe.enableLighting = true;   // day/night terminator follows the sim clock
 Cesium.CzmlDataSource.load(czml).then(ds => {
   viewer.dataSources.add(ds);
