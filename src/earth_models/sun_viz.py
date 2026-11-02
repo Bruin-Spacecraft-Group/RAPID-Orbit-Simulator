@@ -103,7 +103,7 @@ def sun_instant_test():
     satrec = Satrec.twoline2rv(EX_TLE1, EX_TLE2)
     jd = satrec.jdsatepoch + 1
     fr = satrec.jdsatepochF
-    err, sat = satrec.sgp4(jd, fr)
+    err, sat, v = satrec.sgp4(jd, fr)
     sun = 1.496e8 * np.array([0.8, 0.45, 0.4]) / np.linalg.norm([0.8, 0.45, 0.4])
     fig, u, angle = plot_sat_sun(sat, sun, show=False)
     fig.update_layout(template='plotly_dark')
