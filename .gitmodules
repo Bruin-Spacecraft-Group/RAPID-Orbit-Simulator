@@ -1,0 +1,4 @@
+[submodule "submodules/RAPID-Software"]
+	path = submodules/RAPID-Software
+	url = https://github.com/Bruin-Spacecraft-Group/RAPID-Software.git
+	branch = ADCS-Mag-Model
