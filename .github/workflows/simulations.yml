@@ -31,7 +31,7 @@ jobs:
       - name: Run every script with a __main__ guard
         env:
           MPLBACKEND: Agg
-          PYTHONPATH: ${{ github.workspace }}/submodules/RAPID-Software:${{ github.workspace }}/src
+          PYTHONPATH: ${{ github.workspace }}/src
         run: |
           status=0
           for f in $(grep -rlE '^if __name__ == .__main__.' src --include='*.py'); do
