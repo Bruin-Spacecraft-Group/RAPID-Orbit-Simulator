@@ -1,11 +1,13 @@
-"""Satellite, Earth Modelling: Earth, satellite, and the satellite->Sun vector (plotly).
+"""Instantaneous Satellite, Earth Modelling: Earth, satellite, and the satellite->Sun vector (plotly).
 
 Should render (via plotly) on localhost as an interactive web app
+integrated into github pages
 """
 
 import numpy as np
 import plotly.graph_objects as go
 from sgp4.api import Satrec
+from output import publish
 
 # Allows us to import sun_model code
 import sys
@@ -99,7 +101,7 @@ def plot_sat_sun(sat, sun, R=R_EARTH, arrow_len=None, show=True):
     return fig, u, angle
 
 def sun_instant_test():
-    """Test script that shows a single instant in time"""
+    """Test script that shows a single instant based on some example TLE"""
     satrec = Satrec.twoline2rv(EX_TLE1, EX_TLE2)
     jd = satrec.jdsatepoch + 1
     fr = satrec.jdsatepochF
@@ -107,8 +109,7 @@ def sun_instant_test():
     sun = 1.496e8 * np.array([0.8, 0.45, 0.4]) / np.linalg.norm([0.8, 0.45, 0.4])
     fig, u, angle = plot_sat_sun(sat, sun, show=False)
     fig.update_layout(template='plotly_dark')
-    fig.show()
-
+    publish(fig, "Sun Vector (Instant)")
 
 if __name__ == "__main__":
     sun_instant_test()

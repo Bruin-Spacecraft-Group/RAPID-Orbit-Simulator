@@ -1,13 +1,21 @@
-name: Run simulations
+name: Build and deploy simulations site
 
 on:
   push:
     branches: [main]
-  pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
-  simulate:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,22 +24,15 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
+          python-version: "3.12"
           cache: pip
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          else
-            pip install numpy sgp4 plotly
-          fi
+      - run: pip install -r config/requirements.txt
 
-      - name: Run every script with a __main__ guard
+      - name: Run simulations
         env:
-          MPLBACKEND: Agg
           PYTHONPATH: ${{ github.workspace }}/src
+          PLOTLY_RENDERER: json
         run: |
           status=0
           for f in $(grep -rlE '^if __name__ == .__main__.' src --include='*.py'); do
@@ -41,12 +42,30 @@ jobs:
           done
           exit $status
 
-      - name: Upload outputs
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Collect HTML into site/
+        run: |
+          mkdir -p site
+          find . -name '*.html' -not -path './site/*' -not -path './submodules/*' -not -path './.git/*' \
+            -exec cp --parents {} site/ \;
+          # simple index page linking every output
+          {
+            echo '<!doctype html><meta charset="utf-8"><title>RAPID Orbit Simulator</title>'
+            echo '<h1>RAPID Orbit Simulator results</h1><ul>'
+            (cd site && find . -name '*.html' ! -name index.html | sort | sed 's|^\./||' \
+              | while read -r p; do echo "<li><a href=\"$p\">$p</a></li>"; done)
+            echo '</ul>'
+          } > site/index.html
+
+      - uses: actions/upload-pages-artifact@v3
         with:
-          name: simulation-output
-          path: |
-            **/*.png
-            **/*.csv
-          if-no-files-found: ignore
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
