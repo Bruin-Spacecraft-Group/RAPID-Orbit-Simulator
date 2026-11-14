@@ -70,7 +70,7 @@ def sat_to_mag_series(jd, fr, r_teme): #change function
     glat = loc.lat.deg                               # geodetic latitude, deg
     glon = loc.lon.deg                               # east longitude, -180..180
     alt  = loc.height.to(u.km).value                 # altitude above ellipsoid, km
-    time = t.utc.datetime                            # or t.utc.iso 
+    time = float(t.utc.datetime)                     # or t.utc.iso 
 
     #sat_to_mag_original = np.array([vec_satellite_to_sun(j, f, r)
                            #for j, f, r in zip(jd, fr, r_teme)])
@@ -85,8 +85,8 @@ def mag_orbit_test():
     """Test script that shows the TLE's full orbit"""
     name = "Sun Vector (Cesium)"
     t_min, jd, fr, r_teme = propagate_orbit(EX_TLE1, EX_TLE2, n_steps=180)
-    sun_xyz = sat_to_mag_series(jd, fr, r_teme)
-    packets = build_czml(t_min, jd, fr, r_teme, sun_xyz, name=name)
+    mag_xyz = sat_to_mag_series(jd, fr, r_teme)
+    packets = build_czml(t_min, jd, fr, r_teme, mag_xyz, name=name)
     publish_czml(packets, name, out_dir="mag_models")
 
 if __name__ == "__main__":
