@@ -70,7 +70,10 @@ def sat_to_mag_series(jd, fr, r_teme): #change function
     glat = loc.lat.deg                               # geodetic latitude, deg
     glon = loc.lon.deg                               # east longitude, -180..180
     alt  = loc.height.to(u.km).value                 # altitude above ellipsoid, km
-    time = float(t.utc.datetime)                     # or t.utc.iso 
+    try:
+        time = float(t.utc.iso)                     # or t.utc.iso
+    except Exception:
+        time = float(t.utc.decimalyear)
 
     #sat_to_mag_original = np.array([vec_satellite_to_sun(j, f, r)
                            #for j, f, r in zip(jd, fr, r_teme)])
