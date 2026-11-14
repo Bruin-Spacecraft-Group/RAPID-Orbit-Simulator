@@ -6,6 +6,7 @@ dependencies = [
     "numpy",
     "sgp4",
     "plotly",
+    "astropy"
 ]
 
 [build-system]
