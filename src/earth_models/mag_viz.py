@@ -73,7 +73,7 @@ def sat_to_mag_series(jd, fr, r_teme): #change function
     try:
         time = float(t.utc.iso)                     # or t.utc.iso
     except Exception:
-        time = float(t.utc.decimalyear)
+        time = np.atleast_1d(t.utc.decimalyear)
 
     #sat_to_mag_original = np.array([vec_satellite_to_sun(j, f, r)
                            #for j, f, r in zip(jd, fr, r_teme)])
