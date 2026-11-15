@@ -81,7 +81,8 @@ def sat_to_mag_series(jd, fr, r_teme): #change function
     # two calculates to get xyz components
     mag_xyz = []
     for glat0, glon0, alt0, time0 in zip(glat, glon, alt, time):
-        mag = geo_mag.calculate(glat0, glon0, alt0, time0).calculate(False)
+        mag = geo_mag.calculate(glat0, glon0, alt0, time0)
+        mag.calculate(False)
         mag_xyz.append([mag.x, mag.y, mag.z])
 
     np.array(mag_xyz)
