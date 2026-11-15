@@ -78,10 +78,12 @@ def sat_to_mag_series(jd, fr, r_teme): #change function
     #sat_to_mag_original = np.array([vec_satellite_to_sun(j, f, r)
                            #for j, f, r in zip(jd, fr, r_teme)])
 
-    sat_to_mag = np.array([geo_mag.calculate(glat0, glon0, alt0, time0) 
-                           for glat0, glon0, alt0, time0 in zip(glat, glon, alt, time)])
-    
-    mag_xyz = r + sat_to_mag      # recover Earth->Sun
+    # two calculates to get xyz components
+    mag_xyz = np.array()
+    for glat0, glon0, alt0, time0 in zip(glat, glon, alt, time):
+        mag = geo_mag.calculate(glat0, glon0, alt0, time0).calculate()
+        mag_xyz.append([mag.x, mag.y, mag.z])
+
     return mag_xyz
 
 def mag_orbit_test():
