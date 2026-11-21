@@ -46,6 +46,19 @@ def build_test_packets(n_steps=180):
         (earth_directions * (1.5 * R_EARTH), np.zeros(3)),
         (offset_vector, np.array([R_EARTH, 0.0, 0.0])),
     ]
+    arbitrary_segments = [
+        ([5000.0, -3000.0, 1000.0], [5600.0, -3000.0, 1000.0]),
+        ([-4000.0, -2500.0, 1500.0], [-4000.0, -1700.0, 1500.0]),
+        ([2500.0, 4000.0, -2000.0], [2500.0, 4000.0, -900.0]),
+        ([-1500.0, 3500.0, 2600.0], [-1500.0, 4850.0, 2600.0]),
+        ([4500.0, 1500.0, 4000.0], [4500.0, 1500.0, 5600.0]),
+        ([-5000.0, 1000.0, -4000.0], [-5000.0, 2900.0, -4000.0]),
+        ([2000.0, -5000.0, 3500.0], [4200.0, -5000.0, 3500.0]),
+    ]
+    for start, end in arbitrary_segments:
+        start = np.asarray(start, dtype=float)
+        end = np.asarray(end, dtype=float)
+        vectors.append((end - start, start))
 
     return build_czml(
         t_min, jd, fr, sat_xyz, vectors,
