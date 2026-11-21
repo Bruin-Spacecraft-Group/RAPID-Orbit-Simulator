@@ -12,7 +12,7 @@ PAGE_NAME = "CZML Arbitrary Vectors"
 
 
 def build_test_packets(n_steps=180):
-    """Build an example orbit with vectors having different origins."""
+    """Build free-standing vectors plus vectors sourced from scene objects."""
     satrec = Satrec.twoline2rv(EX_TLE1, EX_TLE2)
     period_min = 2 * np.pi / satrec.no_kozai
     t_min = np.linspace(0.0, period_min, n_steps)
@@ -22,49 +22,77 @@ def build_test_packets(n_steps=180):
     if np.any(errors):
         raise RuntimeError(f"SGP4 failed with error code {errors}")
 
-    phase = np.linspace(0.0, 2 * np.pi, n_steps)
-    satellite_vector = np.column_stack((
-        900.0 * np.cos(phase),
-        900.0 * np.sin(phase),
-        500.0 * np.sin(2 * phase),
-    ))
+    displacements = [
+        [600.0, 0.0, 0.0],
+        [0.0, 800.0, 0.0],
+        [0.0, 0.0, 1100.0],
+        [-1350.0, 0.0, 0.0],
+        [0.0, -1600.0, 0.0],
+        [0.0, 0.0, 1900.0],
+        [2200.0, 0.0, 0.0],
+        [0.0, 2600.0, 0.0],
+        [0.0, 0.0, -3000.0],
+        [-3400.0, 0.0, 0.0],
+    ]
+    vectors = []
+    for i, displacement in enumerate(displacements):
+        start = np.array([
+            30000.0 + 7000.0 * i,
+            25000.0 + 8000.0 * (i % 2),
+            20000.0 + 6000.0 * (i % 3),
+        ])
+        vectors.append((np.asarray(displacement), start))
 
-    earth_directions = np.column_stack((
-        np.cos(phase),
-        np.sin(phase),
-        np.full(n_steps, 0.35),
-    ))
+    earth_directions = np.array([
+        [1.0, 0.0, 0.0],
+        [1.0, 0.15, 0.1],
+    ])
     earth_directions /= np.linalg.norm(earth_directions, axis=1, keepdims=True)
+    earth_lengths = [1200.0, 1800.0]
+    for direction, length in zip(earth_directions, earth_lengths):
+        vectors.append((direction * length, direction * R_EARTH))
 
-    offset_vector = np.column_stack((
-        np.full(n_steps, 300.0),
-        600.0 * np.cos(phase),
-        600.0 * np.sin(phase),
-    ))
-    vectors = [
-        (satellite_vector, sat_xyz),
-        (earth_directions * (1.5 * R_EARTH), np.zeros(3)),
-        (offset_vector, np.array([R_EARTH, 0.0, 0.0])),
-    ]
-    arbitrary_segments = [
-        ([5000.0, -3000.0, 1000.0], [5600.0, -3000.0, 1000.0]),
-        ([-4000.0, -2500.0, 1500.0], [-4000.0, -1700.0, 1500.0]),
-        ([2500.0, 4000.0, -2000.0], [2500.0, 4000.0, -900.0]),
-        ([-1500.0, 3500.0, 2600.0], [-1500.0, 4850.0, 2600.0]),
-        ([4500.0, 1500.0, 4000.0], [4500.0, 1500.0, 5600.0]),
-        ([-5000.0, 1000.0, -4000.0], [-5000.0, 2900.0, -4000.0]),
-        ([2000.0, -5000.0, 3500.0], [4200.0, -5000.0, 3500.0]),
-    ]
-    for start, end in arbitrary_segments:
-        start = np.asarray(start, dtype=float)
-        end = np.asarray(end, dtype=float)
-        vectors.append((end - start, start))
+    sun_origin = np.array([85000.0, 45000.0, 35000.0])
+    vectors.append((np.array([0.0, 0.0, 1600.0]), sun_origin))
 
-    return build_czml(
+    satellite_direction = sat_xyz / np.linalg.norm(sat_xyz, axis=1, keepdims=True)
+    vectors.append((satellite_direction * 1400.0, sat_xyz))
+
+    packets = build_czml(
         t_min, jd, fr, sat_xyz, vectors,
         name=PAGE_NAME,
         sat_name="ISS",
     )
+    labels = {
+        "vector_10": "Earth surface vector 1",
+        "vector_11": "Earth surface vector 2",
+        "vector_12": "Illustrative Sun vector",
+        "vector_13": "Satellite vector",
+    }
+    for packet in packets:
+        if packet.get("id") in labels:
+            packet["name"] = labels[packet["id"]]
+
+    packets.append({
+        "id": "illustrative_sun",
+        "name": "Illustrative Sun (not to scale)",
+        "position": {
+            "referenceFrame": "INERTIAL",
+            "cartesian": (sun_origin * 1000.0).tolist(),
+        },
+        "point": {
+            "pixelSize": 12,
+            "color": {"rgba": [255, 215, 0, 255]},
+            "outlineColor": {"rgba": [255, 255, 255, 255]},
+            "outlineWidth": 2,
+        },
+        "label": {
+            "text": "Illustrative Sun (not to scale)",
+            "font": "bold 14px sans-serif",
+            "fillColor": {"rgba": [255, 215, 0, 255]},
+        },
+    })
+    return packets
 
 
 def main():
