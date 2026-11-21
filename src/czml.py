@@ -27,15 +27,18 @@ ORBIT_GREY = [220, 220, 220, 153]
 # ----------------------------------------------------------------------------
 # Geometry
 # ----------------------------------------------------------------------------
-def _geometry_series(sat_xyz, sun_xyz, R):
-    """Per-step unit sat->Sun vector, zenith, altitude (km), sun/zenith angle (deg)."""
-    sat_to_sun = sun_xyz - sat_xyz
-    u = sat_to_sun / np.linalg.norm(sat_to_sun, axis=1, keepdims=True)
-    r_sat = np.linalg.norm(sat_xyz, axis=1)
-    zenith = sat_xyz / r_sat[:, None]
-    angle = np.degrees(np.arccos(np.clip(np.sum(u * zenith, axis=1), -1, 1)))
-    return u, zenith, r_sat - R, angle
 
+def _position_series(values, sample_count, label):
+    """Return one XYZ value per sample, broadcasting a single XYZ triple."""
+    values = np.asarray(values, dtype=float)
+    if values.shape == (3,):
+        return np.repeat(values[None, :], sample_count, axis=0)
+    if values.shape != (sample_count, 3):
+        raise ValueError(
+            f"{label} must have shape (3,) or ({sample_count}, 3); "
+            f"got {values.shape}"
+        )
+    return values
 
 # ----------------------------------------------------------------------------
 # CZML helpers
@@ -94,31 +97,29 @@ def _description_intervals(iso_times, html_strings):
 # ----------------------------------------------------------------------------
 # CZML builder
 # ----------------------------------------------------------------------------
-def build_czml(t_min, jd, fr, sat_xyz, sun_xyz, R=R_EARTH,
-               name="Model", sat_name="ISS", show_ucla = True):
-    """Return a CZML document (list of packets) for the orbit + sun geometry."""
+def build_czml(t_min, jd, fr, sat_xyz, vectors, R=R_EARTH,
+               name="Model", sat_name="ISS", show_ucla=True):
+    """Build CZML for a satellite orbit and vector displacements.
+
+    `t_min`, `jd`, and `fr` are length-N time arrays. `sat_xyz` contains N
+    satellite positions in km. Each item in `vectors` is
+    `(vector_xyz, start_xyz)`, where either value is one XYZ triple or an
+    N-by-3 series, in km. The vector endpoint is `start_xyz + vector_xyz`.
+    """
     N = len(t_min)
-    L = R  # length of the sat->Sun arrow, km (same as the plotly version)
-    t_sec = np.asarray(t_min) * 60.0
+    t_sec = np.asarray(t_min, dtype=float) * 60.0
+    sat_xyz = _position_series(sat_xyz, N, "sat_xyz")
 
     iso_times = [_iso(j, f) for j, f in zip(jd, fr)]
     epoch, end = iso_times[0], iso_times[-1]
     avail = f"{epoch}/{end}"
     duration = float(t_sec[-1])
 
-    u, zenith, alt, angle = _geometry_series(sat_xyz, sun_xyz, R)
-    s_hat = sun_xyz / np.linalg.norm(sun_xyz, axis=1, keepdims=True)
-
-    # Derived points (km, inertial) used as polyline endpoints
-    sun_arrow_tip = sat_xyz + u * L            # sat -> Sun arrow end
-    nadir_foot = zenith * R                    # altitude stem foot on the sphere
-    earth_sun_tip = s_hat * 2 * R              # Earth -> Sun direction end
-
-    descriptions = [
-        f"<p>altitude {a:.1f} km<br>angle between sat&rarr;Sun and local zenith: "
-        f"{g:.1f}&deg;</p>"
-        for a, g in zip(alt, angle)
-    ]
+    sat_radius = np.linalg.norm(sat_xyz, axis=1)
+    zenith = sat_xyz / sat_radius[:, None]
+    altitude = sat_radius - R
+    nadir_foot = zenith * R
+    descriptions = [f"<p>altitude {a:.1f} km</p>" for a in altitude]
 
     packets = [
         {
@@ -133,7 +134,6 @@ def build_czml(t_min, jd, fr, sat_xyz, sun_xyz, R=R_EARTH,
                 "step": "SYSTEM_CLOCK_MULTIPLIER",
             },
         },
-        # --- satellite: marker + full-orbit path + live info box ---
         {
             "id": "satellite",
             "name": sat_name,
@@ -148,56 +148,73 @@ def build_czml(t_min, jd, fr, sat_xyz, sun_xyz, R=R_EARTH,
             },
             "path": {
                 "show": True,
-                "leadTime": duration,   # show the whole orbit at all times
+                "leadTime": duration,
                 "trailTime": duration,
                 "width": 2,
                 "resolution": 60,
                 "material": {"solidColor": {"color": {"rgba": ORBIT_GREY}}},
             },
         },
-        # --- invisible helper entities (position only) used as line endpoints ---
-        {"id": "sun_arrow_tip", "name": "sat → Sun tip", "availability": avail,
-         "position": _sampled_position(epoch, t_sec, sun_arrow_tip)},
-        {"id": "nadir_foot", "name": "nadir foot", "availability": avail,
-         "position": _sampled_position(epoch, t_sec, nadir_foot)},
-        {"id": "earth_sun_tip", "name": "Earth → Sun tip", "availability": avail,
-         "position": _sampled_position(epoch, t_sec, earth_sun_tip)},
-        {"id": "earth_center", "name": "Earth centre", "availability": avail,
-         "position": {"referenceFrame": "INERTIAL", "cartesian": [0.0, 0.0, 0.0]}},
-        # --- dynamic lines, built from entity position references ---
+        {
+            "id": "nadir_foot",
+            "name": "nadir foot",
+            "availability": avail,
+            "position": _sampled_position(epoch, t_sec, nadir_foot),
+        },
         _line("altitude", "altitude", avail, WHITE, 3,
               {"references": ["nadir_foot#position", "satellite#position"]},
               dash=True),
-        _line("sat_to_sun", "sat → Sun", avail, GOLD, 10,
-              {"references": ["satellite#position", "sun_arrow_tip#position"]},
-              arrow=True),
-        _line("earth_to_sun", "Earth → Sun (direction)", avail, RED, 8,
-              {"references": ["earth_center#position", "earth_sun_tip#position"]},
-              arrow=True),
     ]
 
-    # if show_ucla:
-    packets.append({
-        "id": "comms",
-        "name": "UCLA",
-        "position": {
-            "cartographicDegrees": [
-                -118.4427, 34.0722, 0.0
-            ]
-        },
-        "point": {
-            "color": {
-                "rgba": [255, 0, 0, 255]
-            },
-            "pixelSize": 10,
-            "outlineColor": {
-                "rgba": [255, 255, 255, 255]
-            },
-            "outlineWidth": 2
-        }
-    })
+    for i, vector_spec in enumerate(vectors):
+        if len(vector_spec) != 2:
+            raise ValueError(
+                f"vectors[{i}] must be a (vector_xyz, start_xyz) pair"
+            )
+        vector_xyz, start_xyz = vector_spec
+        vector_xyz = _position_series(vector_xyz, N, f"vectors[{i}].vector_xyz")
+        start_xyz = _position_series(start_xyz, N, f"vectors[{i}].start_xyz")
+        end_xyz = start_xyz + vector_xyz
+        start_id = f"vector_{i}_start"
+        end_id = f"vector_{i}_end"
+        vector_name = f"Vector {i + 1}"
+        color = [GOLD, RED, LIME, CRIMSON][i % 4]
 
-    # --- static North vector in the Earth-fixed frame: +z from the pole outward ---
+        packets.extend([
+            {
+                "id": start_id,
+                "name": f"{vector_name} start",
+                "availability": avail,
+                "position": _sampled_position(epoch, t_sec, start_xyz),
+            },
+            {
+                "id": end_id,
+                "name": f"{vector_name} end",
+                "availability": avail,
+                "position": _sampled_position(epoch, t_sec, end_xyz),
+            },
+            _line(
+                f"vector_{i}", vector_name, avail, color, 10,
+                {"references": [f"{start_id}#position", f"{end_id}#position"]},
+                arrow=True,
+            ),
+        ])
+
+    if show_ucla:
+        packets.append({
+            "id": "comms",
+            "name": "UCLA",
+            "position": {
+                "cartographicDegrees": [-118.4427, 34.0722, 0.0]
+            },
+            "point": {
+                "color": {"rgba": [255, 0, 0, 255]},
+                "pixelSize": 10,
+                "outlineColor": {"rgba": WHITE},
+                "outlineWidth": 2,
+            },
+        })
+
     north_len = 0.7 * R
     packets.append(_line(
         "north", "North (+z)", avail, LIME, 10,

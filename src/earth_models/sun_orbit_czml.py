@@ -23,7 +23,7 @@ from pathlib import Path
 import numpy as np
 from sgp4.api import Satrec
 from output import publish_czml
-from czml import build_czml
+from czml import build_czml, R_EARTH
 
 # Allows us to import sun_model code
 # sun_viz.py -> earth_models -> src -> repo root
@@ -61,7 +61,14 @@ def sun_orbit_test():
     name = "Sun Vector (Cesium)"
     t_min, jd, fr, r_teme = propagate_orbit(EX_TLE1, EX_TLE2, n_steps=180)
     sun_xyz = sat_to_sun_series(jd, fr, r_teme)
-    packets = build_czml(t_min, jd, fr, r_teme, sun_xyz, name=name)
+    sat_to_sun = sun_xyz - r_teme
+    sat_to_sun /= np.linalg.norm(sat_to_sun, axis=1, keepdims=True)
+    earth_to_sun = sun_xyz / np.linalg.norm(sun_xyz, axis=1, keepdims=True)
+    vectors = [
+        (sat_to_sun * R_EARTH, r_teme),
+        (earth_to_sun * (2 * R_EARTH), np.zeros(3)),
+    ]
+    packets = build_czml(t_min, jd, fr, r_teme, vectors, name=name)
     publish_czml(packets, name, out_dir="sun_models")
 
 if __name__ == "__main__":

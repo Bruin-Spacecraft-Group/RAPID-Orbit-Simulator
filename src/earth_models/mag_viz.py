@@ -1,15 +1,7 @@
-"""
-Full Orbital version of the sun_viz script, CZML output (CesiumJS)
+"""Render magnetic-field vectors along an example satellite orbit with CesiumJS.
 
-Satellite data uses the python-sgp4 implementation by Brandon Rhodes
-
-TLE data is still just ISS pulled from celestrak
-
-Propagates one full orbit from the input TLE and writes a CZML document of the
-full orbit (satellite, orbit path, altitude stem, sat->Sun vector, Earth->Sun
-direction, North vector) and hands it to output.publish_czml, which writes a
-standalone CesiumJS HTML viewer (CZML embedded) for GitHub Pages and opens it
-locally.
+The script propagates an ISS orbit, calculates the magnetic field at each
+satellite position, and publishes the orbit and field vectors as CZML.
 
 Frame note: positions are written with referenceFrame "INERTIAL" (Cesium's ICRF).
 SGP4 outputs TEME, which differs from ICRF by a small fixed-ish rotation
@@ -23,7 +15,7 @@ from pathlib import Path
 import numpy as np
 from sgp4.api import Satrec
 from output import publish_czml
-from czml import build_czml
+from czml import build_czml, R_EARTH
 
 import astropy.units as u
 from astropy.time import Time
@@ -91,10 +83,18 @@ def sat_to_mag_series(jd, fr, r_teme): #change function
 
 def mag_orbit_test():
     """Test script that shows the TLE's full orbit"""
-    name = "Sun Vector (Cesium)"
+    name = "Magnetic Field Vector (Cesium)"
     t_min, jd, fr, r_teme = propagate_orbit(EX_TLE1, EX_TLE2, n_steps=180)
-    mag_xyz = sat_to_mag_series(jd, fr, r_teme)
-    packets = build_czml(t_min, jd, fr, r_teme, mag_xyz, name=name)
+    mag_xyz = np.asarray(sat_to_mag_series(jd, fr, r_teme), dtype=float)
+    mag_norm = np.linalg.norm(mag_xyz, axis=1, keepdims=True)
+    mag_direction = np.divide(
+        mag_xyz,
+        mag_norm,
+        out=np.zeros_like(mag_xyz),
+        where=mag_norm != 0,
+    )
+    vectors = [(mag_direction * R_EARTH, r_teme)]
+    packets = build_czml(t_min, jd, fr, r_teme, vectors, name=name)
     publish_czml(packets, name, out_dir="mag_models")
 
 if __name__ == "__main__":
